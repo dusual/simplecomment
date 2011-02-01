@@ -1,0 +1,281 @@
+# HG changeset patch
+# User Amit Sethi <amit.pureenergy@gmail.com>
+# Date 1296501608 -19800
+# Node ID 23c33dc089ab339761754f833125c3221474a2cf
+# Parent  c263a26867d48a5c30093e7c6ec97328a3bb9f7f
+Code added to make the project runnable apache mod_wsgi from path /
+
+diff -r c263a26867d4 -r 23c33dc089ab sphinx_django/local_settings.py
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/sphinx_django/local_settings.py	Tue Feb 01 00:50:08 2011 +0530
+@@ -0,0 +1,5 @@
++SPHINX_PROJECT = '/home/home/old-fossee/sttp/_build/html'
++PATH_STATIC_FILES = '/home/home/simplecomment/sphinx_django'
++DATABASE_NAME = '/home/home/simplecomment/sphinx_django/test.db'             # Or path to database file if using sqlite3
++APP_PATH = '/home/home/simplecomment/sphinx_django/'
++
+diff -r c263a26867d4 -r 23c33dc089ab sphinx_django/runonapache.wsgi
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/sphinx_django/runonapache.wsgi	Tue Feb 01 00:50:08 2011 +0530
+@@ -0,0 +1,30 @@
++#usr/bin/python
++
++import os
++import sys
++
++path_project='/home/home/simplecomment'
++path_app='/home/home/simplecomment/sphinx_django'
++
++if path_project not in sys.path:
++    sys.path.append(path_project)
++
++if path_app not in sys.path:
++    sys.path.append(path_app)
++
++
++print >> sys.stderr,str(sys.path)
++
++import django.core.handlers.wsgi
++
++
++os.environ['DJANGO_SETTINGS_MODULE'] = 'sphinx_django.settings'
++
++_application = django.core.handlers.wsgi.WSGIHandler()
++
++
++def application(environ, start_response):
++    environ['PATH_INFO'] = environ['SCRIPT_NAME'] + environ['PATH_INFO']
++    environ['SCRIPT_NAME'] = '' 
++    return _application(environ, start_response)
++
+diff -r c263a26867d4 -r 23c33dc089ab sphinx_django/settings.py
+--- a/sphinx_django/settings.py	Sun Jan 30 12:41:10 2011 +0530
++++ b/sphinx_django/settings.py	Tue Feb 01 00:50:08 2011 +0530
+@@ -1,4 +1,5 @@
+ # Django settings for sphinx_django project.
++from local_settings import *
+ import os
+ 
+ DEBUG = True
+@@ -11,7 +12,7 @@
+ MANAGERS = ADMINS
+ 
+ DATABASE_ENGINE = 'sqlite3'           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+-DATABASE_NAME = 'test.db'             # Or path to database file if using sqlite3.
++
+ DATABASE_USER = ''             # Not used with sqlite3.
+ DATABASE_PASSWORD = ''         # Not used with sqlite3.
+ DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
+@@ -22,6 +23,11 @@
+ # although not all choices may be available on all operating systems.
+ # If running in a Windows environment this must be set to the same as your
+ # system time zone.
++
++SUB_SITE = "/review/"
++
++
++
+ TIME_ZONE = 'America/Chicago'
+ 
+ # Language code for this installation. All choices can be found here:
+@@ -67,7 +73,10 @@
+ ROOT_URLCONF = 'sphinx_django.urls'
+ 
+ 
+-templates=os.path.join(os.getcwd(),'templates')
++
++
++templates=os.path.join(APP_PATH,'templates')
++
+ 
+ TEMPLATE_DIRS = (
+    templates
+@@ -77,7 +86,7 @@
+     # Don't forget to use absolute paths, not relative paths.
+ )
+ # Path of your sphinx static files 
+-SPHINX_PROJECT = '/home/amit/review/sttp_com/_build/html'
++
+ INSTALLED_APPS = (
+     'django.contrib.admin',
+     'django.contrib.auth',
+diff -r c263a26867d4 -r 23c33dc089ab sphinx_django/sphinxcomment/views.py
+--- a/sphinx_django/sphinxcomment/views.py	Sun Jan 30 12:41:10 2011 +0530
++++ b/sphinx_django/sphinxcomment/views.py	Tue Feb 01 00:50:08 2011 +0530
+@@ -17,6 +17,8 @@
+ #placeholder_string = open('paragraph_id.py').read()
+ #exec placeholder_string
+ 
++
++
+ def dump_queries():
+     # requires settings.DEBUG to be set to True in order to work
+     if len(connection.queries) == 1:
+@@ -72,7 +74,7 @@
+ #     return HttpResponse(dumps(resp), mimetype='application/json')
+ 
+ def chapter_count(request,chapter_name):
+-    print chapter_name
++#    print chapter_name
+     chapter_name=chapter_name.split('.')[0]
+     comment_objs = comments_by_chapter(chapter_name)
+     resp={}
+@@ -83,14 +85,14 @@
+     resp['count']=temp_dict
+       
+     
+-    print resp
++#    print resp
+     return HttpResponse(dumps(resp), mimetype='application/json')
+     
+ def single(request,paragraph_id, form=None, newid=None):
+     if paragraph_id[-1]=='/':
+         paragraph_id=paragraph_id[:-1]
+     queryset = Comment.objects.filter(element=paragraph_id)
+-    print len(queryset)
++   #  print len(queryset)
+     if form is None:
+         form = CommentForm(initial={
+             'paragraph_id': paragraph_id,
+@@ -100,7 +102,7 @@
+         error = form.errors[0]
+     except:
+         error = ''
+-    print form.errors
++   # print form.errors
+     return render_to_response('comment.html', {
+         'paragraph_id': paragraph_id,
+         'form': form,
+@@ -123,15 +125,15 @@
+         chapter_name=chapter_id[-1::-1].replace('_','/',1)[-1::-1]
+         element=Element(chapter_name=chapter_name,paragraph_id=paragraph_id)
+         element.save()
+-    print element.chapter_name
++   # print element.chapter_name
+     form = None
+     newid = None
+     
+     if request.method == 'POST':
+         form = CommentForm(request.POST)
+-        print form.errors
++      #  print form.errors
+         if form.is_valid():
+-            print form.cleaned_data
++            #print form.cleaned_data
+             data = form.cleaned_data
+             if data.get('remember'):
+                 request.session['name'] = data['name']
+@@ -144,14 +146,14 @@
+                         submitter_name=data['name'],
+                         submitter_url=data['url'],
+                         ip=request.META.get('REMOTE_ADDR'))
+-            print c
++         #   print c
+             c.save()
+            
+             form = None
+     return single(request, paragraph_id, form,)
+ 
+ def test(request):
+-    print request
++   # print request
+     string="<p>test comment</p>"
+     return HttpResponse(string,mimetype="text/plain")
+     
+@@ -160,10 +162,10 @@
+         soup = bss(open(join(settings.SPHINX_PROJECT, path)).read())
+         head = soup.find('head')
+         first_script = Tag(soup, 'script')
+-        first_script['src'] = "../_static/simplecomment.js"
++        first_script['src'] = "../_static/simplecomment.js" 
+         first_script['type'] = "text/javascript"
+         second_script = Tag(soup, 'script')
+-        second_script['src'] = "../_static/jquery.form.js"
++        second_script['src'] = "../_static/jquery.form.js" 
+         second_script['type'] = "text/javascript"
+         head.insert(-1, first_script)
+         head.insert(-1, second_script)
+diff -r c263a26867d4 -r 23c33dc089ab sphinx_django/static/simplecomment.js
+--- a/sphinx_django/static/simplecomment.js	Sun Jan 30 12:41:10 2011 +0530
++++ b/sphinx_django/static/simplecomment.js	Tue Feb 01 00:50:08 2011 +0530
+@@ -43,8 +43,11 @@
+ 
+   var substring=id.substr(9);
+ 
+-  $('#comments_'+substring).load(location.protocol+"//" + location.host+":8000/single/"+ substring +'/',function() { ajaxifyForm(id);}
+-				);
++  //  $('#comments_'+substring).replaceWith(location.protocol+ "//" + location.host + "/single/"+ substring +'/')
++
++
++      $('#comments_'+substring).load(location.protocol+ "//" + location.host + "/single/"+ substring +'/',function() { ajaxifyForm(id);}
++  				);
+ 
+ }
+ 
+@@ -63,9 +66,15 @@
+ 
+ 
+ $(document).ready(function() {
++ var url_string=window.location.pathname;
++ var temp = new Array();
++ temp = url_string.split('/pages/');
++ var chap_name=temp[1].split('.')[0];
++
++
+   function loading(id) {
+     return " <span id=\"comments_" + id + "\" class=\"comment\">" +
+-    "<span pid=\"" + id + "\" class=\"commenttoggle\"><p>Loading...." +
++	"<span pid=\"" + id + "\" class=\"commenttoggle\"><p>" + "loading..." +
+       "</span>";
+   }
+ 
+@@ -80,7 +89,7 @@
+  temp = url_string.split('/pages/');
+  var chap_name=temp[1].split('.')[0];
+ 
+- jQuery.getJSON(location.protocol+"//" + location.host+":8000/count/"+chap_name, function(data) {
++ jQuery.getJSON(location.protocol+"//" + location.host +  "/count/" + chap_name, function(data) {
+ 
+  		 $("span.comment").each(function(data_val) {
+  		 var id = $(this).attr("id");
+diff -r c263a26867d4 -r 23c33dc089ab sphinx_django/urls.py
+--- a/sphinx_django/urls.py	Sun Jan 30 12:41:10 2011 +0530
++++ b/sphinx_django/urls.py	Tue Feb 01 00:50:08 2011 +0530
+@@ -1,19 +1,24 @@
+ from django.conf.urls.defaults import *
+ from django.contrib import admin
++from local_settings import *
++
+ import os
+ # Uncomment the next two lines to enable the admin:
+ # from django.contrib import admin
+ admin.autodiscover()
+ 
++
++
++
+ urlpatterns = patterns('',
+     # Example:
+     # (r'^sphinx_django/', include('sphinx_django.foo.urls')),
+ 
+     (r'^test/','sphinxcomment.views.test' ),
+-    (r'chapter/', 'sphinxcomment.views.chapter'),
+-    (r'count/(?P<chapter_name>.+)?$', 'sphinxcomment.views.chapter_count'),                  
+-    (r'single/(?P<paragraph_id>[^/]+)/$', 'sphinxcomment.views.single'),
+-    (r'submit/(?P<paragraph_id>[^/]+)/$', 'sphinxcomment.views.submit'),
++    (r'^chapter/', 'sphinxcomment.views.chapter'),
++    (r'^count/(?P<chapter_name>.+)?$', 'sphinxcomment.views.chapter_count'),                  
++    (r'^single/(?P<paragraph_id>[^/]+)/$', 'sphinxcomment.views.single'),
++    (r'^submit/(?P<paragraph_id>[^/]+)/$', 'sphinxcomment.views.submit'),
+     # Uncomment the admin/doc line below and add 'django.contrib.admindocs' 
+     # to INSTALLED_APPS to enable admin documentation:
+     # (r'^admin/doc/', include('django.contrib.admindocs.urls')),
+@@ -21,7 +26,7 @@
+     # Uncomment the next line to enable the admin:
+      (r'^admin/', include(admin.site.urls)),
+      (r'^pages/_static/(?P<path>.*)$', 'django.views.static.serve',
+-     {'document_root': os.path.join(os.getcwd(),'static')}),
++     {'document_root': os.path.join(PATH_STATIC_FILES,'static')}),
+                     
+      (r'^pages/(?P<path>.*)$', 'sphinxcomment.views.page'),
+ )

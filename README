@@ -1,0 +1,54 @@
+.. -*- restructuredtext -*-
+
+=================
+README for sphinx-simplecomment
+=================
+
+The Project
+===========
+
+The project is inspired by django book and hg book. It allows us 
+to comment on sphinx documentation. 
+
+Installing
+==========
+
+Add the html files of SPHINX PROJECT in setting at the variable SPHINX_PROJECT
+
+do
+
+python manage.py syncdb
+python manage runserver
+
+
+Installing using Apache
+=======================
+
+
+Do
+
+python manage.py syncdb before these steps so that you get a db
+to work with.
+
+Install mod_wsgi
+
+Put the path of the wsgi file in your Apache configuration file
+
+For me it was /etc/apache2/sites-available/default like this:
+
+    WSGIScriptAlias / /home/home/simplecomment/sphinx_django/runonapache.wsgi
+
+To be able to read and write to the database under apache you have to
+change the ownership of the sphinx_django folder to www-data or
+whatever user apache is running.
+
+Apart from that there is a local_settings file with which you can
+manage difference between development and production server. I will
+love to see the changes in this file so that i can abstract out more
+differences between developement and production server.
+
+As a sample local_settings file is commited as part of the first
+commit. But may not remain as we refine this project.
+
+
+
