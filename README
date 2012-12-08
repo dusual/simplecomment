@@ -12,13 +12,14 @@ to comment on sphinx documentation.
 
 Installing
 ==========
-
 Add the html files of SPHINX PROJECT in setting at the variable SPHINX_PROJECT
 
 do
 
 python manage.py syncdb
 python manage runserver
+
+You will have to change the local_settings file according to you own requirements.
 
 
 Installing using Apache
